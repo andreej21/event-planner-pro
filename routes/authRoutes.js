@@ -6,6 +6,51 @@ const { validate } = require('../middleware/validateMiddleware');
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Регистрирај нов корисник
+ *     description: Создај нов кориснички сметка со име, е-пошта и лозинка
+ *     tags:
+ *       - Автентикација
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Јоцко Петров"
+ *               email:
+ *                 type: string
+ *                 example: "jocko@example.com"
+ *               password:
+ *                 type: string
+ *                 example: "password123"
+ *     responses:
+ *       201:
+ *         description: Корисник успешно регистриран
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *       400:
+ *         description: Грешка при регистрација
+ */
 router.post(
   '/register',
   [
@@ -17,6 +62,45 @@ router.post(
   register
 );
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Логирај се во систем
+ *     description: Добиј JWT токен со внесување на е-пошта и лозинка
+ *     tags:
+ *       - Автентикација
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "admin@example.com"
+ *               password:
+ *                 type: string
+ *                 example: "password123"
+ *     responses:
+ *       200:
+ *         description: Успешна логирање
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 token:
+ *                   type: string
+ *       401:
+ *         description: Невалидна е-пошта или лозинка
+ */
 router.post(
   '/login',
   [
@@ -27,6 +111,31 @@ router.post(
   login
 );
 
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Добиј информации за тренутниот корисник
+ *     description: Врати профилни информации за логираниот корисник
+ *     tags:
+ *       - Автентикација
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Успешно добиени информации
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 user:
+ *                   type: object
+ *       401:
+ *         description: Не сте логирани
+ */
 router.get('/me', protect, getMe);
 
 module.exports = router;

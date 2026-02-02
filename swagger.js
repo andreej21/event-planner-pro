@@ -8,12 +8,19 @@ const swaggerOptions = {
       version: '1.0.0',
       description: 'REST API документација за EventPlanner Pro',
     },
+    servers: [
+      {
+        url: 'http://localhost:5000',
+        description: 'Development server',
+      },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
+          description: 'JWT токен добиен од /api/auth/login или /api/auth/register',
         },
       },
     },

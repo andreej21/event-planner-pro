@@ -5,20 +5,6 @@ const regCtrl = require('../controllers/registrationController');
 
 const router = express.Router();
 
-// Овие функции НЕ постојат во вашиот controller, затоа греши
-// router.get('/', protect, authorize('admin'), getRegistrations);
-// router.get('/me', protect, getMyRegistrations);
-// router.get('/:id', protect, getRegistration);
-// router.post('/', protect, [body('event')...], validate, createRegistration);
-// router.put('/:id', protect, authorize('admin'), updateRegistration);
-// router.delete('/:id', protect, deleteRegistration);
-
-// Овој route веќе го имате во eventRoutes.js како:
-// POST /api/events/:eventId/registrations
-// Затоа не ви треба овде
-
-// Ако сакате дополнителни routes, додајте ги овие:
-// GET /api/registrations/me - Сите мои регистрации
 router.get('/me', protect, async (req, res, next) => {
   try {
     const Registration = require('../models/Registration');
@@ -30,7 +16,31 @@ router.get('/me', protect, async (req, res, next) => {
   }
 });
 
-// DELETE /api/registrations/:id - Бришење на регистрација
+/**
+ * @swagger
+ * /api/registrations/{id}:
+ *   delete:
+ *     summary: Избриши регистрација
+ *     description: Избриши регистрација по ID (само за сопственикот или админ)
+ *     tags:
+ *       - Регистрации
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID на регистрацијата
+ *     responses:
+ *       200:
+ *         description: Регистрација успешно избришана
+ *       404:
+ *         description: Регистрација не пронајдена
+ *       403:
+ *         description: Немаше право да ја избришете регистрацијата
+ */
 router.delete('/:id', protect, async (req, res, next) => {
   try {
     const Registration = require('../models/Registration');
