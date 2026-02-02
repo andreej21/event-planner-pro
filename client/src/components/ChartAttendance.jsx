@@ -21,7 +21,10 @@ export default function ChartAttendance({ events = [] }) {
       datasets: [
         {
           label: "Participants",
-          data: values
+          data: values,
+          backgroundColor: "rgba(59, 130, 246, 0.5)",
+          borderColor: "rgb(59, 130, 246)",
+          borderWidth: 1,
         }
       ]
     };
@@ -29,15 +32,40 @@ export default function ChartAttendance({ events = [] }) {
 
   const options = {
     responsive: true,
-    plugins: { legend: { display: true } }
+    plugins: { 
+      legend: { 
+        display: true,
+        position: 'top',
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.05)'
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        }
+      }
+    }
   };
 
   if (!events.length) return null;
 
   return (
-    <div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
-      <h3 style={{ marginTop: 0 }}>Attendance Chart</h3>
-      <Bar data={chartData} options={options} />
+    <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <h3 className="mb-4 text-lg font-semibold text-gray-800">Attendance Chart</h3>
+      <div className="h-64">
+        <Bar data={chartData} options={options} />
+      </div>
     </div>
   );
 }
