@@ -5,6 +5,8 @@ import { weatherApi } from "../../services/weather";
 import { useAuth } from "../../app/useAuth";
 import { getErrorMessage } from "../../services/api";
 import Modal from "../../components/Modal";
+import { commentsApi } from "../../services/comments";
+import { registrationsApi } from "../../services/registrations";
 
 export default function EventDetails() {
   const { id } = useParams();
@@ -20,6 +22,15 @@ export default function EventDetails() {
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
 
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+  const [commentErr, setCommentErr] = useState("");
+
+  const [myReg, setMyReg] = useState(null);
+  const [regErr, setRegErr] = useState("");
+  const [regLoading, setRegLoading] = useState(false);
+
+
   const canEdit = useMemo(() => {
     if (!user || !event) return false;
     if (user.role === "admin") return true;
@@ -34,6 +45,26 @@ export default function EventDetails() {
     try {
       const e = await eventsApi.get(id);
       setEvent(e);
+
+      // comments
+        try {
+            const list = await commentsApi.list(id);
+            setComments(list);
+        } catch {
+            setComments([]);
+        }
+
+// my registration status (only if logged in)
+        if (user) {
+            try {
+                const r = await registrationsApi.myStatus(id);
+            setMyReg(r);
+            } catch {
+            setMyReg(null);
+            }
+        } else {
+            setMyReg(null);
+        }
 
       // Weather: само ако е outside
       if (e?.isOutside && e?.location && e?.date) {
@@ -54,9 +85,8 @@ export default function EventDetails() {
   }
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  load();
+}, [id, user]);
 
   async function doDelete() {
     setDeleteError("");
@@ -71,6 +101,52 @@ export default function EventDetails() {
       setDeleting(false);
     }
   }
+  async function addComment() {
+  setCommentErr("");
+  try {
+    if (!commentText.trim()) {
+      setCommentErr("Write a comment.");
+      return;
+    }
+    const created = await commentsApi.create(id, commentText.trim());
+    setComments((prev) => [created, ...prev]);
+    setCommentText("");
+  } catch (e) {
+    setCommentErr(getErrorMessage(e));
+  }
+}
+
+async function doParticipate() {
+  setRegErr("");
+  setRegLoading(true);
+  try {
+    await registrationsApi.participate(id);
+    const updated = await eventsApi.get(id);
+    setEvent(updated);
+    const r = await registrationsApi.myStatus(id);
+    setMyReg(r);
+  } catch (e) {
+    setRegErr(getErrorMessage(e));
+  } finally {
+    setRegLoading(false);
+  }
+}
+
+async function doCancelParticipation() {
+  setRegErr("");
+  setRegLoading(true);
+  try {
+    await registrationsApi.cancel(id);
+    const updated = await eventsApi.get(id);
+    setEvent(updated);
+    setMyReg(null);
+  } catch (e) {
+    setRegErr(getErrorMessage(e));
+  } finally {
+    setRegLoading(false);
+  }
+}
+
 
   if (loading) return <div>Loading...</div>;
   if (serverError) return <div style={{ color: "crimson" }}>{serverError}</div>;
@@ -147,6 +223,30 @@ export default function EventDetails() {
             Delete
           </button>
         )}
+        {user && (
+  <div style={{ marginTop: 12 }}>
+    {regErr && <div style={{ color: "crimson" }}>{regErr}</div>}
+
+    {!myReg ? (
+      <button
+        onClick={doParticipate}
+        disabled={regLoading}
+        style={{ padding: "8px 12px", cursor: "pointer", borderRadius: 8 }}
+      >
+        {regLoading ? "Working..." : "Participate"}
+      </button>
+    ) : (
+      <button
+        onClick={doCancelParticipation}
+        disabled={regLoading}
+        style={{ padding: "8px 12px", cursor: "pointer", borderRadius: 8 }}
+      >
+        {regLoading ? "Working..." : "Cancel participation"}
+      </button>
+    )}
+  </div>
+)}
+
       </div>
 
       <Modal open={confirmOpen} title="Confirm delete" onClose={() => setConfirmOpen(false)}>
@@ -161,6 +261,48 @@ export default function EventDetails() {
           </button>
         </div>
       </Modal>
+
+      <div style={{ marginTop: 18, borderTop: "1px solid #eee", paddingTop: 14 }}>
+  <h3>Comments</h3>
+
+  {!user ? (
+    <div style={{ opacity: 0.8 }}>
+      You must <Link to="/login">login</Link> to comment.
     </div>
+  ) : (
+    <div style={{ marginBottom: 12 }}>
+      {commentErr && <div style={{ color: "crimson" }}>{commentErr}</div>}
+      <textarea
+        value={commentText}
+        onChange={(e) => setCommentText(e.target.value)}
+        rows={3}
+        placeholder="Write a comment..."
+        style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+      />
+      <button onClick={addComment} style={{ marginTop: 8, padding: "8px 12px", cursor: "pointer" }}>
+        Post comment
+      </button>
+    </div>
+  )}
+
+  {!comments.length ? (
+    <div style={{ opacity: 0.7 }}>No comments yet.</div>
+  ) : (
+    <div style={{ display: "grid", gap: 10 }}>
+      {comments.map((c) => (
+        <div key={c._id} style={{ border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
+          <div style={{ fontSize: 13, opacity: 0.8 }}>
+            <b>{c.author?.name || "Unknown"}</b> • {new Date(c.createdAt).toLocaleString()}
+          </div>
+          <div style={{ marginTop: 8 }}>{c.content}</div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+    </div>
+
+    
   );
 }

@@ -9,6 +9,8 @@ const {
 } = require('../controllers/eventController');
 const { protect } = require('../middleware/authMiddleware');
 const { validate } = require('../middleware/validateMiddleware');
+const commentCtrl = require("../controllers/commentController");
+const regCtrl = require("../controllers/registrationController");
 
 const router = express.Router();
 
@@ -45,5 +47,12 @@ router.get('/:id', getEvent);
 router.put('/:id', protect, updateEvent);
 
 router.delete('/:id', protect, deleteEvent);
+
+router.get("/:eventId/comments", commentCtrl.getEventComments);
+router.post("/:eventId/comments", protect, commentCtrl.createEventComment);
+
+router.post("/:eventId/registrations", protect, regCtrl.participate);
+router.get("/:eventId/registrations/me", protect, regCtrl.myStatusForEvent);
+router.delete("/:eventId/registrations/me", protect, regCtrl.cancelMyParticipation);
 
 module.exports = router;

@@ -1,114 +1,66 @@
-const Comment = require('../models/Comment');
-const Event = require('../models/Event');
+const Comment = require("../models/Comment");
+const Event = require("../models/Event");
 
-// @desc GET comments (optionally by event)
-// @route GET /api/comments?eventId=...
-// @access Public
-const getComments = async (req, res, next) => {
+// GET /api/events/:eventId/comments (public)
+exports.getEventComments = async (req, res, next) => {
   try {
-    const filter = {};
-    if (req.query.eventId) filter.event = req.query.eventId;
+    const { eventId } = req.params;
 
-    const comments = await Comment.find(filter)
-      .sort('-createdAt')
-      .populate('author', 'name avatar role')
-      .populate('event', 'title');
+    const exists = await Event.findById(eventId);
+    if (!exists) return res.status(404).json({ success: false, message: "Event not found" });
 
-    res.status(200).json({ success: true, count: comments.length, data: comments });
-  } catch (err) {
-    next(err);
+    const comments = await Comment.find({ event: eventId })
+      .sort({ createdAt: -1 })
+      .populate("author", "name email role avatar");
+
+    res.json({ success: true, data: comments });
+  } catch (e) {
+    next(e);
   }
 };
 
-// @desc GET one comment
-// @route GET /api/comments/:id
-// @access Public
-const getComment = async (req, res, next) => {
+// POST /api/events/:eventId/comments (private)
+exports.createEventComment = async (req, res, next) => {
   try {
-    const comment = await Comment.findById(req.params.id)
-      .populate('author', 'name avatar role')
-      .populate('event', 'title');
-
-    if (!comment) return res.status(404).json({ success: false, message: 'Коментарот не е пронајден' });
-
-    res.status(200).json({ success: true, data: comment });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// @desc Create comment
-// @route POST /api/comments
-// @access Private
-const createComment = async (req, res, next) => {
-  try {
-    const { content, event: eventId, parentComment } = req.body;
+    const { eventId } = req.params;
+    const { content } = req.body;
 
     const event = await Event.findById(eventId);
-    if (!event) return res.status(404).json({ success: false, message: 'Настанот не постои' });
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+
+    if (!content || String(content).trim().length < 1) {
+      return res.status(400).json({ success: false, message: "Content is required" });
+    }
 
     const comment = await Comment.create({
-      content,
+      content: String(content).trim(),
       event: eventId,
-      author: req.user.id,
-      parentComment: parentComment || null,
+      author: req.user.id
     });
 
-    res.status(201).json({ success: true, data: comment });
-  } catch (err) {
-    next(err);
+    const populated = await comment.populate("author", "name email role avatar");
+    res.status(201).json({ success: true, data: populated });
+  } catch (e) {
+    next(e);
   }
 };
 
-// @desc Update comment
-// @route PUT /api/comments/:id
-// @access Private (owner/admin)
-const updateComment = async (req, res, next) => {
+// DELETE /api/comments/:id (private: author or admin)
+exports.deleteComment = async (req, res, next) => {
   try {
-    let comment = await Comment.findById(req.params.id);
-    if (!comment) return res.status(404).json({ success: false, message: 'Коментарот не е пронајден' });
+    const c = await Comment.findById(req.params.id);
+    if (!c) return res.status(404).json({ success: false, message: "Comment not found" });
 
-    const isOwner = String(comment.author) === String(req.user.id);
-    if (!isOwner && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Немаш пристап' });
+    const isOwner = String(c.author) === String(req.user.id);
+    const isAdmin = req.user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
-    comment = await Comment.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, isEdited: true, editedAt: new Date() },
-      { new: true, runValidators: true }
-    );
-
-    res.status(200).json({ success: true, data: comment });
-  } catch (err) {
-    next(err);
+    await c.deleteOne();
+    res.json({ success: true, message: "Deleted" });
+  } catch (e) {
+    next(e);
   }
-};
-
-// @desc Delete comment
-// @route DELETE /api/comments/:id
-// @access Private (owner/admin)
-const deleteComment = async (req, res, next) => {
-  try {
-    const comment = await Comment.findById(req.params.id);
-    if (!comment) return res.status(404).json({ success: false, message: 'Коментарот не е пронајден' });
-
-    const isOwner = String(comment.author) === String(req.user.id);
-    if (!isOwner && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Немаш пристап' });
-    }
-
-    await comment.deleteOne();
-    res.status(200).json({ success: true, message: 'Коментарот е избришан' });
-  } catch (err) {
-    next(err);
-  }
-};
-
-module.exports = {
-  getComments,
-  getComment,
-  createComment,
-  updateComment,
-  deleteComment,
 };

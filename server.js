@@ -14,6 +14,7 @@ const commentRoutes = require('./routes/commentRoutes');
 const weatherRoutes = require('./routes/weatherRoutes');
 const dbRoutes = require('./routes/dbRoutes');
 
+
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 dotenv.config();
@@ -34,6 +35,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/registrations', registrationRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/weather', weatherRoutes);
+
 
 app.use('/db', dbRoutes);
 
