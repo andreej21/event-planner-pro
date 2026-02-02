@@ -74,7 +74,6 @@ export default function EventEdit() {
         if (cancelled) return;
 
         setEvent(e);
-        // fill form
         reset({
           title: e.title ?? "",
           description: e.description ?? "",

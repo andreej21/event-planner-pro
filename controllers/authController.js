@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { sendRegistrationEmail } = require('../utils/emailService');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -27,6 +28,17 @@ const register = async (req, res, next) => {
       email,
       password
     });
+
+    try {
+  await sendRegistrationEmail(user, {
+    title: 'Добредојдовте во EventPlanner Pro!',
+    location: 'Нашата платформа',
+    date: new Date()
+  });
+  console.log('Welcome email успешно испратен до:', user.email);
+} catch (emailErr) {
+  console.error('Грешка при испраќање на регистрациска порака:', emailErr.message);
+}
 
     const token = generateToken(user._id);
 

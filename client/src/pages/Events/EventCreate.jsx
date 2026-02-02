@@ -34,7 +34,6 @@ export default function EventCreate() {
   async function onSubmit(values) {
     setServerError("");
     try {
-      // Mongoose expects ISO strings
       const payload = {
         ...values,
         date: new Date(values.date).toISOString(),
