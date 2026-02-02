@@ -115,6 +115,20 @@ export default function EventDetails() {
     }
   }
 
+  async function deleteComment(commentId) {
+    try {
+      await commentsApi.remove(commentId);
+      setComments((prev) => prev.filter((c) => c._id !== commentId));
+    } catch (e) {
+      alert(getErrorMessage(e));
+    }
+  }
+
+  function canDeleteComment(comment) {
+    if (!user) return false;
+    return String(comment.author._id) === String(user.id) || user.role === "admin";
+  }
+
   async function doParticipate() {
     setRegErr("");
     setRegLoading(true);
@@ -360,7 +374,17 @@ export default function EventDetails() {
               <div key={c._id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-semibold text-gray-900">{c.author?.name || "Anonymous"}</div>
-                  <div className="text-gray-600 text-sm">{new Date(c.createdAt).toLocaleDateString()}</div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-gray-600 text-sm">{new Date(c.createdAt).toLocaleDateString()}</div>
+                    {canDeleteComment(c) && (
+                      <button
+                        onClick={() => deleteComment(c._id)}
+                        className="text-red-600 hover:text-red-800 font-medium text-sm transition-colors"
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="text-gray-700">{c.content}</div>
               </div>
